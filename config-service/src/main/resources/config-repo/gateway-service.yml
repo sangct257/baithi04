@@ -1,0 +1,48 @@
+spring:
+  #Đăng ký định tuyến động
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          # 1. Cấu hình CORS toàn cục chuẩn vị trí
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowCredentials: true
+                allowedOriginPatterns:
+                  - "*"                  # Cho phép mọi Nguồn FE (Localhost, 127.0.0.1, LiveServer, React, Vite)
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                exposedHeaders:
+                  - Authorization
+                  - Set-Cookie
+                maxAge: 3600
+
+  kafka:
+    consumer:
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+server:
+  port: 8080
+
+eureka:
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true

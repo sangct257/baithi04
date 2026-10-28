@@ -1,0 +1,16 @@
+spring:
+    application:
+        name: payment-wallet-service
+    config:
+        import: optional:configserver:http://localhost:8888/
+    kafka:
+        bootstrap-servers: localhost:9092
+        consumer:
+            group-id: payment-wallet-group
+            auto-offset-reset: earliest
+            key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+            properties:
+                spring.json.trusted.packages: "*" # Cho phép đọc DTO Event từ các package khác nhau
+
+jwt-secret: chukibimatdetaorachuoitokenphaidudaineukhongsebinemloi

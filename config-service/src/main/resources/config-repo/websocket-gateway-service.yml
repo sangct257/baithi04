@@ -1,0 +1,43 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: websocket-gateway-service
+          uri: lb:ws://websocket-gateway-service
+          predicates:
+            - Path=/ws/**
+            -
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: websocket-gateway-group
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: ra.demo.event.RideRequestEvent
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+server:
+  port: 8086
+
+eureka:
+  client:
+    registerWithEureka: true
+    fetchRegistry: true
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    preferIpAddress: true
+
+logging:
+  level:
+    ra.demo: DEBUG
+    org.springframework.web.socket: INFO

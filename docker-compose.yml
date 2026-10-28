@@ -1,0 +1,112 @@
+services:
+  # =========================================================================
+  # 1. DATABASE DÀNH CHO USER SERVICE (QUẢN LÝ KHÁCH HÀNG / TÀI XẾ)
+  # =========================================================================
+  user-db:
+    image: postgres:17                  # Sử dụng bản PostgreSQL 17 chính thức
+    container_name: user-db             # Tên container hiển thị trên Docker Desktop
+    restart: unless-stopped             # Tự động khởi động lại nếu bị sập (trừ khi cố tình Stop)
+    environment:
+      POSTGRES_DB: user_db              # Tên Database khởi tạo mặc định
+      POSTGRES_USER: postgres           # Username truy cập DB
+      POSTGRES_PASSWORD: 1234           # Password truy cập DB
+    ports:
+      - "5433:5432"                     # Map port: 5433 (trên máy thật) -> 5432 (bên trong container)
+#    volumes:
+#      - user_db_data:/var/lib/postgresql/data # Lưu dữ liệu vào Volume để không bị mất khi restart container
+
+  # =========================================================================
+  # 2. DATABASE DÀNH CHO TRIP & DISPATCH SERVICE (QUẢN LÝ CHUYẾN ĐI / ĐẶT XE)
+  # =========================================================================
+  trip-dispatch-db:
+    image: postgres:17
+    container_name: trip-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: trip_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5434:5432"                     # Đổi port máy thật thành 5434 để tránh đụng độ với user-db (5433)
+#    volumes:
+#      - trip_dispatch_db:/var/lib/postgresql/data
+
+  # =========================================================================
+  # 3. DATABASE DÀNH CHO PAYMENT SERVICE (QUẢN LÝ VÍ & GIAO DỊCH THANH TOÁN)
+  # =========================================================================
+  payment-db:
+    image: postgres:17
+    container_name: payment-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5435:5432"                     # Port 5435 dành riêng cho Payment DB
+#    volumes:
+#      - payment_db_data:/var/lib/postgresql/data
+
+  # =========================================================================
+  # 3. DATABASE DÀNH CHO PAYMENT SERVICE (QUẢN LÝ VÍ & GIAO DỊCH THANH TOÁN)
+  # =========================================================================
+  location-db:
+    image: postgres:17
+    container_name: location-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: location_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5436:5432"                     # Port 5435 dành riêng cho Payment DB
+  #    volumes:
+  #      - payment_db_data:/var/lib/postgresql/data
+
+  # =========================================================================
+  # 4. ZOOKEEPER (QUẢN LÝ VÀ ĐIỀU PHỐI CLUSTER KAFKA)
+  # =========================================================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181       # Port để Kafka Broker kết nối vào Zookeeper
+      ZOOKEEPER_TICK_TIME: 2000         # Thời gian định thời (tick time) cơ bản tính bằng milliseconds
+    ports:
+      - "2181:2181"
+
+  # =========================================================================
+  # 5. APACHE KAFKA (MESSAGE BROKER - ĐÂY LÀ TRÁI TIM CỦA EVENT-DRIVEN)
+  # =========================================================================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper                       # Ép Kafka phải đợi Zookeeper chạy xong mới khởi động
+    ports:
+      - "9092:9092"                     # Port giao tiếp Kafka chuẩn cho ứng dụng Spring Boot bên ngoài
+    environment:
+      KAFKA_BROKER_ID: 1                # ID định danh duy nhất cho Broker này trong Cluster
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 # Địa chỉ để Kafka tìm và đăng ký với Zookeeper
+      # Khai báo địa chỉ mà các Producer/Consumer (Spring Boot) ở ngoài Docker kết nối vào
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Vì chạy 1 Kafka Broker ở môi trường Dev nên Replication Factor chỉ cần để là 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # =========================================================================
+  # 6. REDIS SERVER (DÙNG CHO REDIS GEO ĐỊNH VỊ TÀI XẾ & CACHING REALTIME)
+  # =========================================================================
+  redis:
+    image: redis:7.2.6-alpine            # Sử dụng bản Alpine siêu nhẹ của Redis
+    container_name: redis-server
+    restart: unless-stopped
+    ports:
+      - "6379:6379"                     # Port Redis mặc định để Location Service đẩy/tìm tọa độ GPS
+
+# =========================================================================
+# ĐỊNH NGHĨA DỮ LIỆU BỀN VỮNG (PERSISTENT VOLUMES) DÀNH CHO CÁC DATABASE
+# =========================================================================
+#volumes:
+#  user_db_data:         # Thư mục ổ cứng ảo lưu dữ liệu cho user-db
+#  trip_dispatch_db:     # Thư mục ổ cứng ảo lưu dữ liệu cho trip-dispatch-db
+#  payment_db_data:       # Thư mục ổ cứng ảo lưu dữ liệu cho payment-db

@@ -1,0 +1,14 @@
+spring:
+    application:
+        name: pricing-surge-service
+    config:
+        import: optional:configserver:http://localhost:8888/
+
+locationiq:
+    api:
+        key: pk.7939da0d43354ae446e39ac07086b84f
+
+osrm:
+    url: http://router.project-osrm.org/route/v1/driving
+
+jwt-secret: chukibimatdetaorachuoitokenphaidudaineukhongsebinemloi
